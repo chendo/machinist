@@ -3,8 +3,10 @@ require 'machinist'
 
 class Base
   include Machinist
-  
-  def save!;  @saved = true;    true; end
+
+  attr_accessor :invalid
+
+  def save;   @saved    = !@invalid;  end
   def reload; @reloaded = true; self; end
   
   def saved?;    @saved;    end
@@ -67,6 +69,17 @@ describe Machinist do
     post.title.should == "A Different Title"
   end
   
+  it "should override a field from the blueprint with nil" do
+    post = Post.make(:title => nil)
+    post.title.should be_nil
+  end
+
+  it "should return invalid object from #make" do
+    post = Post.make(:invalid => true)
+    post.should_not be_saved
+    post.should_not be_reloaded
+  end
+
   it "should create an associated object for a field with no arguments in the blueprint" do
     comment = Comment.make
     comment.post.should_not be_nil

@@ -22,8 +22,8 @@ module Machinist
       raise "No blueprint #{blueprint_name.inspect} for class #{self}" if blueprint.nil?
       lathe = Lathe.new(self.new, attributes)
       lathe.instance_eval(&blueprint)
-      lathe.object.save!
-      lathe.object.reload
+      lathe.object.save && lathe.object.reload
+      lathe.object
     end
   end
   
