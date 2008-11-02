@@ -32,7 +32,13 @@ Comment.blueprint do
   author "Fred Bloggs"
   body   "Just a comment."
 end
-  
+
+Comment.blueprint :bob do
+  post
+  author "Bob"
+  body "Just a comment."
+end
+
 describe Machinist do
   describe "calling make with no arguments" do
     before do
@@ -56,7 +62,7 @@ describe Machinist do
     end
   end
   
-  it "should overrid a field from the blueprint with a parameter" do
+  it "should override a field from the blueprint with a parameter" do
     post = Post.make(:title => "A Different Title")
     post.title.should == "A Different Title"
   end
@@ -64,5 +70,10 @@ describe Machinist do
   it "should create an associated object for a field with no arguments in the blueprint" do
     comment = Comment.make
     comment.post.should_not be_nil
+  end
+
+  it "creates an object from a non-default blueprint" do
+    comment = Comment.make(:bob)
+    comment.author.should == 'Bob'
   end
 end

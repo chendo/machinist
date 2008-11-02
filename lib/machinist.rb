@@ -6,14 +6,22 @@ module Machinist
   end
   
   module ClassMethods
-    def blueprint(&blueprint)
-      @blueprint = blueprint
+    def blueprint(name = :default, &blueprint)
+      @blueprints ||= {}
+      if blueprint then @blueprints[name] = blueprint end
+      @blueprints[name]
     end
   
-    def make(attributes = {})
-      raise "No blueprint for class #{self}" if @blueprint.nil?
+    def make(blueprint_name = :default, attributes = {})
+      if !blueprint_name.is_a?(Symbol)
+        attributes     = blueprint_name
+        blueprint_name = :default
+      end
+
+      blueprint = blueprint(blueprint_name)
+      raise "No blueprint #{blueprint_name.inspect} for class #{self}" if blueprint.nil?
       lathe = Lathe.new(self.new, attributes)
-      lathe.instance_eval(&@blueprint)
+      lathe.instance_eval(&blueprint)
       lathe.object.save!
       lathe.object.reload
     end
