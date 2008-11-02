@@ -12,7 +12,7 @@ module Machinist
       @blueprints[name]
     end
   
-    def make(blueprint_name = :default, attributes = {})
+    def make(blueprint_name = :default, attributes = {}, require_valid = true)
       if !blueprint_name.is_a?(Symbol)
         attributes     = blueprint_name
         blueprint_name = :default
@@ -22,8 +22,11 @@ module Machinist
       raise "No blueprint #{blueprint_name.inspect} for class #{self}" if blueprint.nil?
       lathe = Lathe.new(self.new, attributes)
       lathe.instance_eval(&blueprint)
-      lathe.object.save && lathe.object.reload
-      lathe.object
+      lathe.save_object(require_valid)
+    end
+
+    def make!(blueprint_name = :default, attributes = {})
+      
     end
   end
   
@@ -38,6 +41,16 @@ module Machinist
     end
 
     attr_reader :object
+
+    def save_object(require_valid = true)
+      if require_valid
+        @object.save!
+      else
+        @object.save
+      end
+      @object.reload unless @object.new_record?
+      @object
+    end
 
     def method_missing(symbol, *args, &block)
       if @assigned_attributes.include?(symbol)
