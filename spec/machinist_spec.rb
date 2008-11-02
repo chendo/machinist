@@ -6,11 +6,20 @@ class Base
 
   attr_accessor :invalid
 
+  def save!
+    raise "Invalid record" if @invalid
+    save
+  end
+
   def save;   @saved    = !@invalid;  end
   def reload; @reloaded = true; self; end
   
   def saved?;    @saved;    end
   def reloaded?; @reloaded; end
+
+  def new_record?
+    !@saved
+  end
 end
 
 class Post < Base
@@ -74,8 +83,8 @@ describe Machinist do
     post.title.should be_nil
   end
 
-  it "should return invalid object from #make" do
-    post = Post.make(:invalid => true)
+  it "should return invalid object from #make!" do
+    post = Post.make!(:invalid => true)
     post.should_not be_saved
     post.should_not be_reloaded
   end

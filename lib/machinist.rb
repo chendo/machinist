@@ -26,7 +26,7 @@ module Machinist
     end
 
     def make!(blueprint_name = :default, attributes = {})
-      
+      make(blueprint_name, attributes, false)
     end
   end
   
