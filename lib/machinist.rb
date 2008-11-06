@@ -6,18 +6,30 @@ module Machinist
   end
   
   module ClassMethods
-    def blueprint(&blueprint)
-      @blueprint = blueprint
+    def blueprint(name = :default, &blueprint)
+      @blueprints ||= {}
+      if blueprint then @blueprints[name] = blueprint end
+      @blueprints[name]
     end
   
-    def make(attributes = {})
-      raise "No blueprint for class #{self}" if @blueprint.nil?
+    def make(blueprint_name = :default, attributes = {}, require_valid = true)
+      if !blueprint_name.is_a?(Symbol)
+        attributes     = blueprint_name
+        blueprint_name = :default
+      end
+
+      blueprint = blueprint(blueprint_name)
+      raise "No blueprint #{blueprint_name.inspect} for class #{self}" if blueprint.nil?
       lathe = Lathe.new(self.new, attributes)
-      lathe.instance_eval(&@blueprint)
-      lathe.object.save!
-      returning(lathe.object.reload) do |object|
+      lathe.instance_eval(&blueprint)
+      lathe.save_object(require_valid)
+      returning(lathe.object) do |object|
         yield object if block_given?
       end
+    end
+
+    def make!(blueprint_name = :default, attributes = {})
+      make(blueprint_name, attributes, false)
     end
   end
   
@@ -32,6 +44,16 @@ module Machinist
     end
 
     attr_reader :object
+
+    def save_object(require_valid = true)
+      if require_valid
+        @object.save!
+      else
+        @object.save
+      end
+      @object.reload unless @object.new_record?
+      @object
+    end
 
     def method_missing(symbol, *args, &block)
       if @assigned_attributes.include?(symbol)

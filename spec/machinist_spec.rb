@@ -3,12 +3,23 @@ require 'machinist'
 
 class Base
   include Machinist
-  
-  def save!;  @saved = true;    true; end
+
+  attr_accessor :invalid
+
+  def save!
+    raise "Invalid record" if @invalid
+    save
+  end
+
+  def save;   @saved    = !@invalid;  end
   def reload; @reloaded = true; self; end
   
   def saved?;    @saved;    end
   def reloaded?; @reloaded; end
+
+  def new_record?
+    !@saved
+  end
 end
 
 class Post < Base
@@ -32,7 +43,13 @@ Comment.blueprint do
   author "Fred Bloggs"
   body   "Just a comment."
 end
-  
+
+Comment.blueprint :bob do
+  post
+  author "Bob"
+  body "Just a comment."
+end
+
 describe Machinist do
   describe "calling make with no arguments" do
     before do
@@ -56,11 +73,22 @@ describe Machinist do
     end
   end
   
-  it "should overrid a field from the blueprint with a parameter" do
+  it "should override a field from the blueprint with a parameter" do
     post = Post.make(:title => "A Different Title")
     post.title.should == "A Different Title"
   end
   
+  it "should override a field from the blueprint with nil" do
+    post = Post.make(:title => nil)
+    post.title.should be_nil
+  end
+
+  it "should return invalid object from #make!" do
+    post = Post.make!(:invalid => true)
+    post.should_not be_saved
+    post.should_not be_reloaded
+  end
+
   it "should create an associated object for a field with no arguments in the blueprint" do
     comment = Comment.make
     comment.post.should_not be_nil
@@ -74,5 +102,10 @@ describe Machinist do
     post.should be_an_instance_of(Post)
     comments.should_not be_nil
     comments.each {|comment| comment.post.should == post }
+  end
+
+  it "creates an object from a non-default blueprint" do
+    comment = Comment.make(:bob)
+    comment.author.should == 'Bob'
   end
 end
